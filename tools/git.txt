@@ -1,0 +1,430 @@
+# GIT CHEATSHEET (Chinese Quick Reference Sheet)  -  by albertwang21 (created on 2019/09/16)
+# Version: 1, Last Modified: 2019/09/16 18:00
+# https://github.com/skywind3000/awesome-cheatsheets
+##############################################################################
+
+# Configuration
+##############################################################################
+git config --global "Your Name"
+git config --global "Email Address"
+git config --global credential.helper store    Save password (enter or re-enter password every time)
+git config user.name "Your Name" Configure the username for the current repository
+git config user.email "Email Address" Configure the email address for the current repository
+
+# Initialization
+##############################################################################
+git init
+
+# Committing Changes
+##############################################################################
+git add <file>
+git add -u Stage all tracked files in the work directory
+git commit -m "descriptions"
+git commit --amend Modify the most recent commit's content
+git commit --amend --author "user_name <user_email>" Modify the username and email for the most recent commit
+
+# Viewing Status and Differences
+##############################################################################
+git status
+git status -s File status in short format, common codes: A: added; M: modified; ?: untracked; D: deleted
+git diff <file>
+git diff HEAD -- <file> Compare working directory and the latest version in the repository
+git diff --check <file> Check for whitespace errors (regex: ' \{1,\}$')
+git diff --cached <file> View changes that are staged (green M)
+git diff branch1 branch2 --stat View differences between two branches
+git diff branch1 branch2 <file...> View specific file differences between branches
+
+# Viewing Version History and Operations
+##############################################################################
+git log
+git reflog
+git log -n Show the last n commits in the history
+git log <branch_name> -n Show the last n commits in branch branch_name
+git log --stat Show file changes for each commit
+git log --shortstat Similar to --stat but shows a summary of file and line changes (n file changed, n insertions(+), n deletions(-))
+git log --name-status Show a list of added, modified, and deleted files
+git log lhs_hash..rhs_hash Compare changes between two commits (lhs is the subject of addition and deletion, e.g., git log HEAD~2..HEAD == git log HEAD -3)
+git log -p Show the content changes for each commit
+git log -p -W Show content changes for each commit with context
+git log origin/EI-1024 -1 --stat -p -W View detailed changes in the last modification of the remote branch EI-1024
+git log origin/master..dev --stat -p -W View detailed changes (modifications) of the local dev branch compared to the remote master branch
+git log <branch_name> --oneline Display commit history in a single line
+git log <branch_name> --graph Display commit history graphically
+git log <branch_name> --decorate Display references related to commit history, such as tags, local and remote branches
+git log <branch_name> --oneline --graph --decorate Combine the above options to display history in a tree-like format
+git log --graph --pretty=format:... --abbrev-commit Similar to the above, recommended to be saved as an alias
+
+git log --pretty=format Common format options (excerpt from progit_v2.1.9)
+%H Full hash of the commit object
+%h Short hash of the commit object
+%T Full hash of the tree object
+%t Short hash of the tree object
+%P Full hash of the parent object
+%p Short hash of the parent object
+%an Author's name
+%ae Author's email address
+%ad Author's commit date (customizable format with --date=)
+%ar Author's commit date, displayed in a human-friendly way
+%cn Committer's name
+%ce Committer's email address
+%cd Commit date
+%cr Commit date, displayed in a human-friendly way
+%s Commit message
+
+git log --since --after Show commits after a specific time
+git log --until --before Show commits before a specific time
+git --author Show commits by a specific author
+git --committer Show commits by a specific committer (Note: committer may not be the author)
+git log -S [keyword] Show commits that added or removed a specific keyword (useful in some cases compared to git log -p | grep [keyword])
+git log origin/b3.3/master --author=yx-ren --since="2019-10-01" --before="2019-11-01" View the last month's commits by a specific author in a release version, commonly used for passing blame
+git log origin/b3.0/master --author=some_leave --since="1 month ago" View the commits of a recently departed colleague in the last month, commonly used for passing blame
+git log --since=1.weeks Show commits from the past week (useful for weekly reports)
+git log --since=1.days Show commits from the past day (useful for checking what you've done today)
+git log --since="1 weeks 2 days 3 hours 40 minutes 50 seconds ago" Show commits within a specific time frame
+
+
+# Version Rollback and Forward
+##############################################################################
+git reset --hard HEAD^      Roll back to the previous version (1 commit back)
+git reset --hard HEAD~5     Roll back to the version 5 commits back
+git reset --hard id         Roll back to a specified version
+
+# Undoing Changes
+##############################################################################
+git checkout -- <file>      Undo changes: Revert a mistakenly modified file in the working directory, no git add/commit
+git restore <file>          Undo changes: Revert a mistakenly modified file in the working directory, no git add/commit
+git reset HEAD <file>       Undo git add: Unstage a file (git add) that was added mistakenly, no git commit
+git reset --hard HEAD^      Undo git commit: Revert a committed file (once committed, can only be undone by version rollback)
+
+# Deletion and Recovery
+##############################################################################
+git rm/add <file>
+git commit -m "remove <file>"   Delete a file in the version control: After deleting the file from the working directory, remove the corresponding file from the version control
+git checkout -- <file>          Restore the working directory file based on the version-controlled file
+git restore <file>              New way to restore files (introduced in 2.23)
+
+# Cleaning Untracked or Unignored Files/Folders in the Working Directory (e.g., temporary .swp, .patch files)
+##############################################################################
+git clean -i    Interactive cleaning, not commonly used
+git clean -n    View the list of files to be cleaned (excluding folders), without actually cleaning them
+git clean -n -d View the list of files to be cleaned (including folders), without actually cleaning them
+git clean -f    Clean all untracked files
+git clean -df   Clean all untracked files and folders, commonly used, but ensure newly created files or folders have been added before using, otherwise, newly created files or folders will also be forcefully deleted
+
+# Linking a GitHub Remote Repository (Local to Remote)
+##############################################################################
+git remote add origin <remote address> Link your local working directory to the GitHub repository as per GitHub's instructions
+git remote rm origin Unlink an incorrect repository
+git push -u origin master Push the local repository to the remote repository for the first time (do this after each local commit)
+git push origin master Push the local repository to the remote repository in the future (do this after each local commit)
+<remote address>:
+    git@github.com:<username>/<repository>.git
+    https://github.com/<username>/<repository>.git
+
+# Cloning a GitHub Remote Repository (Remote to Local)
+##############################################################################
+git clone <remote address> git protocol is faster but usually not allowed in corporate intranets, https protocol is slower
+
+# Branch Management: Create, Switch, View, Merge, Delete
+##############################################################################
+git branch <branch name>            Create a new <branch name> branch
+git checkout <branch name>          Switch to the <branch name> branch
+git switch <branch name>            Switch to the <branch name> branch (introduced in 2.23)
+git checkout -b <branch name>       Create and switch to a new <branch name> branch
+git switch -c <branch name>         Create and switch to a new <branch name> branch
+git checkout origin/master -b <branch name> Create a new branch based on the <master> branch under the remote repository <origin>
+git branch                          View existing branches (* indicates the current branch)
+git merge <branch name>             Merge the <branch name> into the current branch (usually performed on the master branch)
+git merge --no-commit <branch name> Merge the <branch name> into the current branch, but do not commit
+git branch -d <branch name>         Delete a branch
+git branch -m oldbranchname newname Rename a branch
+
+# Resolving Merge Conflicts
+##############################################################################
+If an error occurs during merging, stating that there are conflicts, you should first edit the conflicted file in Vim, then use git add/commit to recommit the changes. Finally, delete any unnecessary branches.
+
+# Branch Management: Keeping Branch Records after Deletion
+##############################################################################
+git merge --no-ff -m "descriptions" <branch name>
+
+# Development Workflow:
+##############################################################################
+master branch              For stable releases
+dev branch                 For ongoing development
+<developer name> branch    Personal development branch (when personal development is completed, merge it into dev while keeping the branch for further development)
+
+# Managing Bug Fix Branches (Creating a Separate Branch for Bug Fixes)
+##############################################################################
+In software development, bugs are common occurrences. In Git, with the power of branches, each bug can be fixed using a new temporary branch. After fixing the bug, merge the branch, and then delete the temporary branch.
+git stash                   Save the current workspace (when working on dev but need to fix a bug on master)
+git stash pop               Return to the dev branch and restore the workspace (the stash in the list will be removed at the same time)
+git stash list              View the currently stored workspace
+git stash apply stash@{#}   Return to a specified workspace (the stash in the list won't be removed, use git stash drop)
+git stash drop stash@{#}    Delete a specified workspace
+git cherry-pick <id>        After fixing a bug in master, copy the bug-fixing process to dev
+
+# Managing Feature Branches (Creating a Separate Branch for Adding New Features)
+##############################################################################
+In software development, there's a constant need to add new features. When adding a new feature, you don't want to disrupt the main branch with experimental code. It's best to create a feature branch for each new feature, develop it there, merge it upon completion, and then delete the feature branch.
+git branch -D <branch name>    Force delete a branch (discarding unmerged changes)
+
+##############################################################################
+# Collaborating and Pushing Branches
+##############################################################################
+User 1:
+git remote [-v]                        View remote repository information (-v for detailed information)
+git remote update origin --prune       Update the branch list (update the list of remote branches)
+git remote update origin -p            Update the branch list (update the list of remote branches)
+git push origin [master/dev/...]       Push a specific branch to the remote repository
+User 2:
+git clone <remote address>             Clone the repository locally (can only clone the master branch)
+git checkout -b dev origin/dev         Create a new local branch and associate it with the remote branch
+git add/commit/push                    Add, commit, and push updates
+User 1:
+git add/commit/push                    Error occurs during push (conflict with updates pushed by User 2)
+git pull <remote> <branch>
+git branch --set-upstream-to=origin/<branch> <branch>    Link local and remote branches
+git pull                               Fetch remote files (and resolve conflicts)
+git commit/push                        Resubmit and push updates
+
+
+
+##############################################################################
+# Tag Management (Commonly Used for Versioning): View, Create, Operations
+##############################################################################
+git tag                             View tags
+git show <tag name>                 View a specific tag
+git log --pretty=oneline --abbrev-commit --decorate=full    Display tags in log
+git tag <tag name>                  Create a tag at the current commit location
+git tag <tag name> <commit id>      Create a tag at a specific commit location
+git tag -a <tag name> -m "descriptions" <commit id>         Create a tag at a specific commit location with a description
+git tag -d <tag name>               Delete a local tag
+git push origin <tag name>          Push a specific tag to the remote repository
+git push origin --tags              Push all local tags to the remote repository
+git push origin :refs/tags/<tag name> Delete a remote tag (must delete the local tag first)
+
+##############################################################################
+# rebase(换基)
+##############################################################################
+# rebase 在日常中常用功能主要是两个, 多人协同开发定期rebase master以及压缩某分支多个commit
+git rebase master 常见于多人开发, 每个开发人员从master checkout出自己的分支, 开发一段时间后提交至master之前最好rebase一下, 防止冲突,
+              就算真有冲突在本地解决好过强制提交, 开发流程中尽量保证master的干净整洁
+
+举个例子:
+master分支上有三个提交C1, C2, C3
+某一时刻usr1在C3的master分支上checkout出新的分支, 用于开发服务端支持ipv6新特性, 并提交了C4, C5
+git checkout -b ipv6_support
+......
+git commit -m C4
+......
+git commit -m C5
+此时提交状态如下所示
+      (origin/master branch)
+             |
+C1 <- C2 <- C3
+             \
+              \
+               \
+                C4 <- C5
+                       |
+                (ipv6_support branch)
+
+某同事usr2修改了master上的内存泄漏错误, 并提交了C6, C7, C8三个commit, 然后直接推送origin/master(假设这个期间无其他人推新内容到master)
+此时提交状态如下所示
+                    (origin/usr2/fix_mem_leak branch)
+                               |
+C1 <- C2 <- C3 <- C6 <- C7 <- C8
+             \                 |
+              \         (origin/master branch)
+               \
+                C4 <- C5
+                       |
+                (ipv6_support branch)
+
+如果此时usr1希望将ipv6的新特性提交至master, 那么在其直接push origin master时会提示master需要合并分支ipv6_support
+虽然C4, C5的改动内容完全独立于C6, C7, C8的改动
+但git仍会抓取C5和C8的提交并产生一个新的C9 commit(因两者分支的base不同), 如下图所示
+C1 <- C2 <- C3 <- C6 <- C7 <- C8
+             \                 \
+              \                 \
+               \                 \
+                C4 <- C5 <------ C9
+
+如果是为了保证master提交记录的"干净完整"
+或者是某分支不着急提交, 仍需要更多的测试与开发, 但又不想分支开发周期结束后"偏离"当初checkout的master分支太久远(容易造成更多的冲突)
+可以考虑(定期)利用rebase来进行变基
+即上面提到过的多人协同开发, 定期rebase master是个好习惯
+git checkout ipv6_support
+git rebase master
+结果提交状态如下所示
+            (origin/master origin/usr2/fix_mem_leak branch)
+                               |
+C1 <- C2 <- C3 <- C6 <- C7 <- C8
+                                \
+                                 \
+                                  \
+                                   C4' <- C5'
+                                           |
+                                    (ipv6_support branch)
+这种rebase在功能上类似将某分支所有的改动做成多个patch并依次打在指定的新base上
+此时再提交master就不会产生抓取效果, 会将C4'和C5'直接提交至master, 即can be fast-forwarded, 同时也保证了master提交记录的整洁性
+(注: 虽然C4'和C5'的内容和C4, C5完全一致, 但两者base不同, commit hash code也完全不同)
+
+git rebase --noto <branch_lhs> <branch_rhs> #重放, 用于变基在分支branch_lhs中而不在branch_rhs中的commit
+#某项目状态分支如下所示, 其中Cn的数字代表提交时间顺
+# T1 某员工urs1从C2(master分支)checkout出一个新的分支用于开发某基础公共组件功能
+# T2 员工usr1开发完毕提交C3, 然后继续在该分支上(或checkout -b server)开发服务端相关功能, 并提交C4
+# T3 master分支有更新, 其他同事usr2提交了C5, C6并推送到了origin master
+# T4 员工usr1从server分支切回到C3公共基础的提交, 并创建新分支client, 用于开发客户端功能, 并提交C8, C9
+# T5 员工usr1从client分支切回到server分支继续开发服务端功能, 并提交C10
+            (master branch)
+                   |
+C1 <- C2 <- C5 <- C6
+         \
+          \
+           \
+            C3 <- C4 <- C10
+               \         |
+                \ (server branch)
+                 \
+                  C8 <- C9
+                         |
+                  (client branch)
+
+# 此时该员工希望将客户端相关的功能合并到主分支并发布，但暂时并不想合并 server 中的修改，因为它们还需要经
+# 过更全面的测试。 这时可以使用 git rebase 命令的 --onto 选项，选中在 client 分支里但不在
+# server 分支里的修改（即 C8 和 C9），将它们在 master 分支上重放：
+
+git rebase --noto client server
+# 得到如下图所示的提交状态
+# 注:其中C3', C8', C9'与C3, C8, C9的提交内容完全一样, 但是hash id是完全不同的
+            (master branch)(client branch)
+                   |            |
+C1 <- C2 <- C5 <- C6 <- C8' <- C9'
+         \
+          \
+           \
+            C3 <- C4 <- C10
+               \         |
+                \ (server branch)
+                 \
+               [#####disable######]
+               [  C8 <- C9        ]
+               [         |        ]
+               [  (client branch) ]
+
+#can be fast-forwarded
+git checkout master
+git merge client
+# 提交后分支状态如下
+                                (client branch)
+                                       |
+C1 <- C2 <- C5 <- C6 <- C3' <- C8' <- C9'
+         \                             |
+          \                     (master branch)
+           \
+            C3 <- C4 <- C10
+                         |
+                  (server branch)
+
+git rebase -i HEAD~n 压缩当前分支的n个commit并合并为1个commit, 常见第一行为pick, 剩下的n-1行为squash
+
+git rebase --abort # rebase过程中发生错误, 可以利用该命令终止整个rebase过程
+git rebase --continue # rebase过程中发生冲突, 在解决冲突后可以利用该命令进行后续过程
+
+##############################################################################
+# 打patch(补丁)
+##############################################################################
+# 生成diff patch文件(git可以识别diff文件)
+git <branch> log -n -p > diff.patch # 生成某分支过去n个commit的文件diff信息至单个diff文件
+git diff <--cached> diff.patch # 针对当前缓存区的内容生成diff文件
+
+# 利用apply打patch
+git apply --check diff.patch    #检查是否可以正常应用, 无回显证明无冲突
+git apply --stat diff.patch     #查看应用diff文件后的文件变化
+git apply diff.patch            #打patch, 仅仅改变文件信息, 无commit信息, 仍然需要add, commit
+
+# 利用--format-patch生成patch, 带commit信息
+git format-patch <branch> -n 　 #生成分支<branch>最近的n次commit的patch
+git format-patch <r1>..<r2>     #生成两个commit间的修改的patch（包含两个commit. <r1>和<r2>都是具体的commit号)
+git format-patch -1 <r1>        #生成单个commit的patch
+git format-patch <r1>           #生成某commit以来的修改patch（不包含该commit）
+git format-patch --root <r1>　　#生成从根到r1提交的所有patch
+
+# 利用am打patch
+git apply --check 0001-update-bash.sh.patch #检查patch是否冲突可用
+git apply --stat 0001-update-bash.sh.patch  #检查patch文件变更情况, 无回显证明无冲突
+git am 0001-update-bash.sh.patch            #将该patch打上到当前分支, 带commit信息
+git am ./*.patch                            #将当前路径下的所有patch按照先后顺序打上
+git am --abort                              #终止整个打patch的过程, 类似rebase --abort
+git am --resolved                           #解决冲突后, 可以执行该命令进行后续的patch, 类似rebase --continue
+
+##############################################################################
+
+##############################################################################
+# bundle(打包)
+##############################################################################
+# 该命令会将git工程打包, 默认情况下会打包所有commit记录和track的文件
+# 不同于简单粗暴tar.gz打包整个文件夹, bundle只打包那些push过的记录
+# 如某git工程下存在.build构建后的目录, 而.gitignore又忽略了该文件夹
+# 如果利用tar.gz打包则会将那些忽略的文件文件夹一并打包, 可能会造成压缩包极大的臃肿
+# 而又不想仅仅为了打个包就删除整个build目录(如重新build时间成本太大)
+# 那么就可以使用bundle进行打包, 该命令只打包track过的文件
+# 并且像url那样直接调用git clone来重建
+git bundle create awesome-cheatsheets.bundle HEAD master #打包重建master分支的所有数据
+git clone awesome-cheatsheets.bundle # 重建工程
+
+# bundle也可以打包指定的区间, 至于提交区间有多种表示方式
+git bundle create awesome-cheatsheets.bundle HEAD~10
+git bundle create awesome-cheatsheets.bundle HEAD~10..HEAD
+git bundle create awesome-cheatsheets.bundle lhs_commit_md5..rhs_commit_md5
+git bundle create awesome-cheatsheets.bundle origin/master..master
+git bundle create awesome-cheatsheets.bundle master ^origin/master
+
+
+##############################################################################
+# 使用GitHub
+##############################################################################
+fork --> clone --> add/commit/push --> pull request
+
+
+##############################################################################
+# 其他配置
+##############################################################################
+git config --global color.ui true    显示颜色
+
+
+##############################################################################
+# 配置.gitignore文件
+##############################################################################
+/<dir name>/                    忽略文件夹
+*.zip                           忽略.zip文件
+/<dir name>/<file name>         忽略指定文件
+
+
+##############################################################################
+# 文件.gitignore生效后
+##############################################################################
+git add -f <file>               强制添加
+git check-ignore -v <file>      查看生效规则
+
+
+##############################################################################
+# 配置别名
+##############################################################################
+git config [--global] alias.<alias> '<original command>'    为所有工作区/当前工作区配置别名
+.git/config             当前工作区的配置文件
+~/.gitconfig            当前用户的配置文件
+
+
+##############################################################################
+# References
+##############################################################################
+https://www.liaoxuefeng.com/wiki/896043488029600
+https://git-scm.com/book/en/v2
+
+##############################################################################
+# 子模块
+##############################################################################
+git submodule foreach git pull    子模块更新
+
