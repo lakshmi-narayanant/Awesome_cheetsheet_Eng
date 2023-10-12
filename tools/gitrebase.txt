@@ -97,7 +97,7 @@ C1 <- C2 <- C5 <- C6 <- C3' <- C8' <- C9'
             C3 <- C4 <- C10
                          |
                   (server branch)
-
+These steps allow you to integrate specific changes into master while keeping your commit history clean.
 
 
 
