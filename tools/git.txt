@@ -204,21 +204,21 @@ git push origin --tags              Push all local tags to the remote repository
 git push origin :refs/tags/<tag name> Delete a remote tag (must delete the local tag first)
 
 ##############################################################################
-# rebase(换基)
+# Rebase (Changing the Base)
 ##############################################################################
-# rebase 在日常中常用功能主要是两个, 多人协同开发定期rebase master以及压缩某分支多个commit
-git rebase master 常见于多人开发, 每个开发人员从master checkout出自己的分支, 开发一段时间后提交至master之前最好rebase一下, 防止冲突,
-              就算真有冲突在本地解决好过强制提交, 开发流程中尽量保证master的干净整洁
+# Rebase has two common uses in daily work: rebasing to master in collaborative development and compressing multiple commits in a branch.
+# In collaborative development, each developer should regularly rebase their branch to the latest master. This helps prevent conflicts.
+# Even if conflicts occur, it's better to resolve them locally than to force a commit. It's important to keep the master branch clean and tidy during development.
 
-举个例子:
-master分支上有三个提交C1, C2, C3
-某一时刻usr1在C3的master分支上checkout出新的分支, 用于开发服务端支持ipv6新特性, 并提交了C4, C5
+Example:
+Suppose the master branch has three commits: C1, C2, C3.
+At some point, usr1 checks out a new branch from C3 of the master branch to develop server-side support for IPv6 and makes two commits, C4 and C5.
 git checkout -b ipv6_support
-......
+...
 git commit -m C4
-......
+...
 git commit -m C5
-此时提交状态如下所示
+At this point, the commit status looks like this:
       (origin/master branch)
              |
 C1 <- C2 <- C3
@@ -229,8 +229,8 @@ C1 <- C2 <- C3
                        |
                 (ipv6_support branch)
 
-某同事usr2修改了master上的内存泄漏错误, 并提交了C6, C7, C8三个commit, 然后直接推送origin/master(假设这个期间无其他人推新内容到master)
-此时提交状态如下所示
+A colleague, usr2, fixes a memory leak in the master branch and commits C6, C7, and C8. They then push to origin/master, assuming no other developers have pushed during this time.
+The commit status now appears as follows:
                     (origin/usr2/fix_mem_leak branch)
                                |
 C1 <- C2 <- C3 <- C6 <- C7 <- C8
@@ -241,22 +241,20 @@ C1 <- C2 <- C3 <- C6 <- C7 <- C8
                        |
                 (ipv6_support branch)
 
-如果此时usr1希望将ipv6的新特性提交至master, 那么在其直接push origin master时会提示master需要合并分支ipv6_support
-虽然C4, C5的改动内容完全独立于C6, C7, C8的改动
-但git仍会抓取C5和C8的提交并产生一个新的C9 commit(因两者分支的base不同), 如下图所示
+If usr1 now wants to merge the IPv6 feature into the master branch, pushing directly to origin master will trigger a request to merge the ipv6_support branch.
+Even though the changes in C4 and C5 are completely independent of C6, C7, and C8, Git will fetch C5 and C8 commits and create a new commit, C9.
+The commit status appears as follows:
 C1 <- C2 <- C3 <- C6 <- C7 <- C8
              \                 \
               \                 \
                \                 \
                 C4 <- C5 <------ C9
 
-如果是为了保证master提交记录的"干净完整"
-或者是某分支不着急提交, 仍需要更多的测试与开发, 但又不想分支开发周期结束后"偏离"当初checkout的master分支太久远(容易造成更多的冲突)
-可以考虑(定期)利用rebase来进行变基
-即上面提到过的多人协同开发, 定期rebase master是个好习惯
+If the goal is to ensure a "clean and complete" commit history on the master branch or if a branch is not yet ready for submission but should not diverge significantly from the initially checked-out master branch, you can use rebase (regularly) for these purposes. Regular rebasing on the master branch is a good practice in collaborative development.
+
 git checkout ipv6_support
 git rebase master
-结果提交状态如下所示
+The resulting commit status is as follows:
             (origin/master origin/usr2/fix_mem_leak branch)
                                |
 C1 <- C2 <- C3 <- C6 <- C7 <- C8
@@ -266,156 +264,96 @@ C1 <- C2 <- C3 <- C6 <- C7 <- C8
                                    C4' <- C5'
                                            |
                                     (ipv6_support branch)
-这种rebase在功能上类似将某分支所有的改动做成多个patch并依次打在指定的新base上
-此时再提交master就不会产生抓取效果, 会将C4'和C5'直接提交至master, 即can be fast-forwarded, 同时也保证了master提交记录的整洁性
-(注: 虽然C4'和C5'的内容和C4, C5完全一致, 但两者base不同, commit hash code也完全不同)
+This type of rebase is functionally similar to bundling all changes in a branch into multiple patches and applying them sequentially to a specified new base.
+Now, when you commit to the master branch, there will be no fetching effect. C4' and C5' will be submitted directly to the master branch, and the commit can be fast-forwarded, ensuring a clean commit history.
 
-git rebase --noto <branch_lhs> <branch_rhs> #重放, 用于变基在分支branch_lhs中而不在branch_rhs中的commit
-#某项目状态分支如下所示, 其中Cn的数字代表提交时间顺
-# T1 某员工urs1从C2(master分支)checkout出一个新的分支用于开发某基础公共组件功能
-# T2 员工usr1开发完毕提交C3, 然后继续在该分支上(或checkout -b server)开发服务端相关功能, 并提交C4
-# T3 master分支有更新, 其他同事usr2提交了C5, C6并推送到了origin master
-# T4 员工usr1从server分支切回到C3公共基础的提交, 并创建新分支client, 用于开发客户端功能, 并提交C8, C9
-# T5 员工usr1从client分支切回到server分支继续开发服务端功能, 并提交C10
-            (master branch)
-                   |
-C1 <- C2 <- C5 <- C6
-         \
-          \
-           \
-            C3 <- C4 <- C10
-               \         |
-                \ (server branch)
-                 \
-                  C8 <- C9
-                         |
-                  (client branch)
+Note: While the content of C4' and C5' is identical to C4 and C5, they have different bases and completely different commit hash codes.
 
-# 此时该员工希望将客户端相关的功能合并到主分支并发布，但暂时并不想合并 server 中的修改，因为它们还需要经
-# 过更全面的测试。 这时可以使用 git rebase 命令的 --onto 选项，选中在 client 分支里但不在
-# server 分支里的修改（即 C8 和 C9），将它们在 master 分支上重放：
+git rebase --noto <branch_lhs> <branch_rhs> # Replay, used to rebase commits in branch_lhs but not in branch_rhs
 
-git rebase --noto client server
-# 得到如下图所示的提交状态
-# 注:其中C3', C8', C9'与C3, C8, C9的提交内容完全一样, 但是hash id是完全不同的
-            (master branch)(client branch)
-                   |            |
-C1 <- C2 <- C5 <- C6 <- C8' <- C9'
-         \
-          \
-           \
-            C3 <- C4 <- C10
-               \         |
-                \ (server branch)
-                 \
-               [#####disable######]
-               [  C8 <- C9        ]
-               [         |        ]
-               [  (client branch) ]
 
-#can be fast-forwarded
-git checkout master
-git merge client
-# 提交后分支状态如下
-                                (client branch)
-                                       |
-C1 <- C2 <- C5 <- C6 <- C3' <- C8' <- C9'
-         \                             |
-          \                     (master branch)
-           \
-            C3 <- C4 <- C10
-                         |
-                  (server branch)
+git rebase -i HEAD~n #:Compresses the last n commits of the current branch into one commit. The most common usage involves having the first line as "pick" and the remaining n-1 lines as "squash."
 
-git rebase -i HEAD~n 压缩当前分支的n个commit并合并为1个commit, 常见第一行为pick, 剩下的n-1行为squash
+git rebase --abort #:If an error occurs during the rebase process, you can use this command to terminate the entire rebase process.
 
-git rebase --abort # rebase过程中发生错误, 可以利用该命令终止整个rebase过程
-git rebase --continue # rebase过程中发生冲突, 在解决冲突后可以利用该命令进行后续过程
+git rebase --continue #:In case of conflicts during the rebase process, after resolving the conflicts, you can use this command to continue with the remaining steps.
 
 ##############################################################################
-# 打patch(补丁)
+# Create Patches
 ##############################################################################
-# 生成diff patch文件(git可以识别diff文件)
-git <branch> log -n -p > diff.patch # 生成某分支过去n个commit的文件diff信息至单个diff文件
-git diff <--cached> diff.patch # 针对当前缓存区的内容生成diff文件
+# Generate diff patch files (recognized by Git)
+git log -n -p > diff.patch  # Generate diff information for the last n commits in a branch and save it to a single diff file
+git diff [--cached] diff.patch  # Generate a diff file for the content in the current staging area
 
-# 利用apply打patch
-git apply --check diff.patch    #检查是否可以正常应用, 无回显证明无冲突
-git apply --stat diff.patch     #查看应用diff文件后的文件变化
-git apply diff.patch            #打patch, 仅仅改变文件信息, 无commit信息, 仍然需要add, commit
+# Apply Patches
+git apply --check diff.patch  # Check if the patch can be applied without conflicts (no output means no conflicts)
+git apply --stat diff.patch  # View the changes in files after applying the diff file
+git apply diff.patch  # Apply the patch to change file information; it does not include commit information, so you still need to add and commit the changes
 
-# 利用--format-patch生成patch, 带commit信息
-git format-patch <branch> -n 　 #生成分支<branch>最近的n次commit的patch
-git format-patch <r1>..<r2>     #生成两个commit间的修改的patch（包含两个commit. <r1>和<r2>都是具体的commit号)
-git format-patch -1 <r1>        #生成单个commit的patch
-git format-patch <r1>           #生成某commit以来的修改patch（不包含该commit）
-git format-patch --root <r1>　　#生成从根到r1提交的所有patch
+# Generate Patches with Commit Information
+git format-patch <branch> -n  # Generate patches for the last n commits on the <branch>
+git format-patch <r1>..<r2>  # Generate patches for modifications between two commits (including both <r1> and <r2>)
+git format-patch -1 <r1>  # Generate a patch for a single commit
+git format-patch <r1>  # Generate patches for modifications since a specific commit (excluding that commit)
+git format-patch --root <r1>  # Generate patches for all commits from the root to the <r1> commit
 
-# 利用am打patch
-git apply --check 0001-update-bash.sh.patch #检查patch是否冲突可用
-git apply --stat 0001-update-bash.sh.patch  #检查patch文件变更情况, 无回显证明无冲突
-git am 0001-update-bash.sh.patch            #将该patch打上到当前分支, 带commit信息
-git am ./*.patch                            #将当前路径下的所有patch按照先后顺序打上
-git am --abort                              #终止整个打patch的过程, 类似rebase --abort
-git am --resolved                           #解决冲突后, 可以执行该命令进行后续的patch, 类似rebase --continue
-
-##############################################################################
+# Apply Patches with `git am`
+git apply --check 0001-update-bash.sh.patch  # Check if the patch conflicts with the current branch
+git apply --stat 0001-update-bash.sh.patch  # Check the changes in the patch file (no output means no conflicts)
+git am 0001-update-bash.sh.patch  # Apply the patch to the current branch, including commit information
+git am ./*.patch  # Apply all patches in the current directory in order
+git am --abort  # Terminate the entire patching process, similar to `rebase --abort`
+git am --resolved  # After resolving conflicts, execute this command to continue with the patching process, similar to `rebase --continue`
 
 ##############################################################################
-# bundle(打包)
+# Bundle
 ##############################################################################
-# 该命令会将git工程打包, 默认情况下会打包所有commit记录和track的文件
-# 不同于简单粗暴tar.gz打包整个文件夹, bundle只打包那些push过的记录
-# 如某git工程下存在.build构建后的目录, 而.gitignore又忽略了该文件夹
-# 如果利用tar.gz打包则会将那些忽略的文件文件夹一并打包, 可能会造成压缩包极大的臃肿
-# 而又不想仅仅为了打个包就删除整个build目录(如重新build时间成本太大)
-# 那么就可以使用bundle进行打包, 该命令只打包track过的文件
-# 并且像url那样直接调用git clone来重建
-git bundle create awesome-cheatsheets.bundle HEAD master #打包重建master分支的所有数据
-git clone awesome-cheatsheets.bundle # 重建工程
+# This command packages a Git project. By default, it bundles all commit history and tracked files.
+# Unlike a simple tar.gz archive that packs the entire directory, a bundle only includes records that have been pushed.
+# For example, if a Git project has a .build directory with build artifacts, and the .gitignore file excludes it,
+# creating a tar.gz archive would include the ignored directory, potentially resulting in a large and unwieldy archive.
+# If you don't want to delete the entire build directory just to create a package (e.g., because rebuilding it is time-consuming),
+# you can use the bundle command to package only the tracked files.
+# You can also use a Git clone URL to reconstruct the project directly.
+git bundle create awesome-cheatsheets.bundle HEAD master  # Package all data from the master branch for reconstruction
+git clone awesome-cheatsheets.bundle  # Reconstruct the project
 
-# bundle也可以打包指定的区间, 至于提交区间有多种表示方式
-git bundle create awesome-cheatsheets.bundle HEAD~10
-git bundle create awesome-cheatsheets.bundle HEAD~10..HEAD
-git bundle create awesome-cheatsheets.bundle lhs_commit_md5..rhs_commit_md5
-git bundle create awesome-cheatsheets.bundle origin/master..master
-git bundle create awesome-cheatsheets.bundle master ^origin/master
-
+# Bundle can also package a specific range of commits. There are multiple ways to specify commit ranges.
+git bundle create awesome-cheatsheets.bundle HEAD~10  # Package the last 10 commits
+git bundle create awesome-cheatsheets.bundle HEAD~10..HEAD  # Package commits between HEAD~10 and HEAD
+git bundle create awesome-cheatsheets.bundle lhs_commit_md5..rhs_commit_md5  # Package commits between lhs_commit_md5 and rhs_commit_md5
+git bundle create awesome-cheatsheets.bundle origin/master..master  # Package commits in the local master that are not in the origin/master
+git bundle create awesome-cheatsheets.bundle master ^origin/master  # Package commits in the master but not in the origin/master
 
 ##############################################################################
-# 使用GitHub
+# Using GitHub
 ##############################################################################
 fork --> clone --> add/commit/push --> pull request
 
+##############################################################################
+# Other Configurations
+##############################################################################
+git config --global color.ui true  # Enable color display
 
 ##############################################################################
-# 其他配置
+# Configuring .gitignore File
 ##############################################################################
-git config --global color.ui true    显示颜色
-
-
-##############################################################################
-# 配置.gitignore文件
-##############################################################################
-/<dir name>/                    忽略文件夹
-*.zip                           忽略.zip文件
-/<dir name>/<file name>         忽略指定文件
-
+/<dir name>/                    # Ignore a directory
+*.zip                           # Ignore .zip files
+/<dir name>/<file name>         # Ignore a specific file
 
 ##############################################################################
-# 文件.gitignore生效后
+## After the .gitignore file is in effect
 ##############################################################################
-git add -f <file>               强制添加
-git check-ignore -v <file>      查看生效规则
-
+git add -f <file>             # Forcefully add a file (ignore .gitignore rules)
+git check-ignore -v <file>    # Check which rules apply to the file (verbose mode)
 
 ##############################################################################
-# 配置别名
+# Configure Aliases
 ##############################################################################
-git config [--global] alias.<alias> '<original command>'    为所有工作区/当前工作区配置别名
-.git/config             当前工作区的配置文件
-~/.gitconfig            当前用户的配置文件
-
+git config [--global] alias.<alias> '<original command>'  # Set up an alias for a Git command, either for the entire repository or the current workspace
+.git/config  # The configuration file for the current workspace
+~/.gitconfig  # The configuration file for the current user
 
 ##############################################################################
 # References
@@ -424,7 +362,6 @@ https://www.liaoxuefeng.com/wiki/896043488029600
 https://git-scm.com/book/en/v2
 
 ##############################################################################
-# 子模块
+# Submodules
 ##############################################################################
-git submodule foreach git pull    子模块更新
-
+git submodule foreach git pull  # Update submodules
