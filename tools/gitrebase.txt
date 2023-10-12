@@ -1,0 +1,105 @@
+Rebase Cheat Sheet
+Rebase (换基)
+Rebase is commonly used for two main purposes in daily development:
+
+#1.Collaborative Development:
+
+Regularly rebase your feature branch onto the master branch in multi-person development to keep it up to date.
+Example:
+git rebase master
+
+#2.Compressing Commits in a Branch:
+
+Combine and compress multiple commits in a branch to make the commit history cleaner.
+Example:
+git rebase -i HEAD~<number_of_commits>
+
+#Collaborative Development Example
+Suppose you have the following commit history:
+    (origin/master branch)
+           |
+C1 <- C2 <- C3
+           \
+            \
+             \
+              C4 <- C5
+                     |
+      (ipv6_support branch)
+A colleague, usr2, makes changes to master with commits C6, C7, and C8.
+You are working on the ipv6_support branch. When you try to push your changes to master, 
+Git creates a new commit C9 because the bases of your branch and master differ. Rebase can help:
+1#Checkout your branch:
+git checkout ipv6_support
+
+2#Rebase it onto master:
+git rebase master
+The commit history will be:
+
+           (origin/master origin/usr2/fix_mem_leak branch)
+                       |
+C1 <- C2 <- C3 <- C6 <- C7 <- C8
+                                \
+                                 \
+                                  \
+                                   C4' <- C5'
+                                           |
+                            (ipv6_support branch)
+Now when you run git log --oneline, you'll see that there's only one merge commit between these branches!
+This rebase integrates your changes into master without creating an extra commit, 
+ensuring a clean commit history.
+#Rebase with --onto Option
+The --onto option allows you to rebase specific changes between two branches.
+
+Suppose your branch history looks like this:
+            (master branch)
+                   |
+C1 <- C2 <- C5 <- C6
+         \
+          \
+           \
+            C3 <- C4 <- C10
+               \         |
+                \ (server branch)
+                 \
+                  C8 <- C9
+                         |
+                  (client branch)
+
+You want to merge the client-related changes (C8 and C9) into master but leave out the server changes.
+You can do this with the --onto option:
+
+git rebase --onto client server
+The commit history will look like this:
+
+            (master branch)(client branch)
+                   |            |
+C1 <- C2 <- C5 <- C6 <- C8' <- C9'
+         \                             |
+          \                     (master branch)
+           \
+            C3 <- C4 <- C10
+                         |
+                  (server branch)
+
+Now, you can fast-forward merge the changes from the client branch into master:
+
+git checkout master
+git merge client
+
+The branch status will be:
+
+                            (client branch)
+                                   |
+C1 <- C2 <- C5 <- C6 <- C3' <- C8' <- C9'
+         \                             |
+          \                     (master branch)
+           \
+            C3 <- C4 <- C10
+                         |
+                  (server branch)
+
+
+
+
+
+
