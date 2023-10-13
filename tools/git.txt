@@ -145,7 +145,7 @@ If an error occurs during merging, stating that there are conflicts, you should 
 
 # Branch Management: Keeping Branch Records after Deletion
 ##############################################################################
-git merge --no-ff -m "descriptions" <branch name>
+git merge --no-ff -m "descriptions" <branch name>#command is used to merge a feature branch into the current branch while creating a new merge commit, even if a fast-forward merge is possible. 
 
 # Development Workflow:
 ##############################################################################
@@ -165,7 +165,9 @@ git cherry-pick <id>        After fixing a bug in master, copy the bug-fixing pr
 
 # Managing Feature Branches (Creating a Separate Branch for Adding New Features)
 ##############################################################################
-In software development, there's a constant need to add new features. When adding a new feature, you don't want to disrupt the main branch with experimental code. It's best to create a feature branch for each new feature, develop it there, merge it upon completion, and then delete the feature branch.
+In software development, there's a constant need to add new features. When adding a new feature, 
+you don't want to disrupt the main branch with experimental code. It's best to create a feature branch for each new feature, develop it there, merge it upon completion, and then delete the feature branch.
+
 git branch -D <branch name>    Force delete a branch (discarding unmerged changes)
 
 ##############################################################################
